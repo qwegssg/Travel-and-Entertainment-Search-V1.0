@@ -42,14 +42,12 @@
         $jsonPlace = json_encode($jsonPlace);
     }
 
+    // get the place_id and save up to 5 photos in the server
     if(isset($_GET['place_id'])) {
-        $arrayOfPlace = json_decode($jsonPlace, true);
         $urlOfDetail = "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$_GET['place_id']."&key=AIzaSyDhC1Tha8FKORJfe7--SYluRWe_n1LVMoE";
         $jsonDetail = file_get_contents($urlOfDetail);
-        // decode the JSON string to php variables
         $jsonDetailPhoto = json_decode($jsonDetail, true);
 
-        // if there is no photo about the place
         if(!isset($jsonDetailPhoto['result']['photos'])) {
             $numPhoto = 0;
         } else {
@@ -249,6 +247,7 @@
 
         // need to work on!!!!!
         function showDetail(element) {
+
             var selectedPlace = element.getAttribute('id');
             var xhr = new XMLHttpRequest();
             var url = "place.php?place_id=" + selectedPlace + "&para2=" + Math.random();
@@ -256,23 +255,50 @@
             xhr.onreadystatechange = function() {
                 if(xhr.readyState == 4 && xhr.status == 200) {
                     var numPhoto = xhr.responseText;
-                    if(numPhoto == 0) {
-                        html_text = "<div style='width: 800px; margin: 0 auto; border: 2px solid #cccccc; font-size: 20px; font-weight: 600; text-align: center;'>No Photos Found</div>";
-                        document.getElementById("div").innerHTML = html_text;
-                    } else {
-                        html_text = "<table border='1' style='margin: 0 auto; width: 800px'><tr>";
-                        for(var i = 0; i < numPhoto; i++) {
-                            html_text += "<td style='text-align: center'><img src='photo" + i + ".jpg' style='padding: 20px' width='700px'></td></tr>";
-                        }
-                    }
-                    html_text += "</table>";
-                    document.getElementById("div").innerHTML = html_text;
+                    console.log(numPhoto);
+
+            // create the menu of photos and reviews
+            placeName = element.textContent;
+            html_text = "<div style='font-size: 25px; font-weight: 600; padding-bottom: 50px; text-align: center;'>" + placeName + "</div>";
+            html_text += "<div style='font-size: 20px; text-align: center;'>click to show reviews</div>" ;
+            html_text += "<div id='reviewButton' style='text-align: center'><a href='javaScript:void(0)' onclick='showReview()'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a></div>";
+            html_text += "<div id='reviewList' style='display: none'></div>";
+            html_text += "<br>";
+            html_text += "<div style='font-size: 20px; text-align: center;'>click to show photos</div>";
+            html_text += "<div id='photoButton' style='text-align: center'><a href='javaScript:void(0)' onclick='showPhoto(" + numPhoto + ")'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a></div>";
+            html_text += "<div id='photoList' style='display: none'></div>";
+            document.getElementById("div").innerHTML = html_text;
                 }
             };
             xhr.send();
+
+
         }
 
+        function showReview() {
 
+        }
+
+        function showPhoto(numPhoto) {
+            document.getElementById("photoButton").innerHTML = "<a href='javaScript:void(0)' onclick='hidePhoto(" + numPhoto + ")'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_up.png' width='40px'></a>";
+            if(numPhoto == 0) {
+                html_text = "<div style='width: 800px; margin: 0 auto; border: 2px solid #cccccc; font-size: 20px; font-weight: 600; text-align: center;'>No Photos Found</div>";
+                document.getElementById("photoList").innerHTML = html_text;
+            } else {
+                html_text = "<table border='1' style='margin: 0 auto; width: 800px'><tr>";
+                for(var i = 0; i < numPhoto; i++) {
+                    html_text += "<td style='text-align: center'><a href='photo" + i + ".jpg' target='_blank'><img src='photo" + i + ".jpg' style='padding: 20px' width='730px'></a></td></tr>";
+                }
+                html_text += "</table>";
+                document.getElementById("photoList").innerHTML = html_text;
+            }
+            document.getElementById("photoList").style.display = "block"; 
+        }
+
+        function hidePhoto(numPhoto) {
+            document.getElementById('photoList').style.display = "none";
+            document.getElementById("photoButton").innerHTML = "<a href='javaScript:void(0)' onclick='showPhoto(" + numPhoto + ")'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a>";
+        }
 
         // construct the place table
         jsonPlace = <?php echo $jsonPlace; ?>;
