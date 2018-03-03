@@ -4,7 +4,7 @@
     if(isset($_POST['search'])) {
         // user enter the location information
         if(isset($_POST['otherLocation'])) {
-            $urlOfMap = "https://maps.googleapis.com/maps/api/geocode/json?address=".urlencode($_POST['otherLocation'])."&key=AIzaSyDhC1Tha8FKORJfe7--SYluRWe_n1LVMoE";
+            $urlOfMap = "https://maps.googleapis.com/maps/api/geocode/json?address=".urlencode($_POST['otherLocation'])."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
             $arrayOfMap = json_decode(file_get_contents($urlOfMap), true);
 
 
@@ -33,10 +33,10 @@
         $keyword = $_POST['keyword'];
 
         if($type == 'default') {
-            $urlOfPlace = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=".$location."&radius=".$radius."&keyword=".urlencode($keyword)."&key=AIzaSyDhC1Tha8FKORJfe7--SYluRWe_n1LVMoE";
+            $urlOfPlace = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=".$location."&radius=".$radius."&keyword=".urlencode($keyword)."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
         }
         else {
-            $urlOfPlace = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=".$location."&radius=".$radius."&type=".$type."&keyword=".urlencode($keyword)."&key=AIzaSyDhC1Tha8FKORJfe7--SYluRWe_n1LVMoE";   
+            $urlOfPlace = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=".$location."&radius=".$radius."&type=".$type."&keyword=".urlencode($keyword)."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";   
         }
         $jsonPlace = file_get_contents($urlOfPlace);
         $jsonPlace = json_encode($jsonPlace);
@@ -44,7 +44,7 @@
 
 
     if(isset($_GET['place_id'])) {
-        $urlOfDetail = "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$_GET['place_id']."&key=AIzaSyDhC1Tha8FKORJfe7--SYluRWe_n1LVMoE";
+        $urlOfDetail = "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$_GET['place_id']."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
         $jsonDetail = file_get_contents($urlOfDetail);
         $jsonDetail = json_decode($jsonDetail, true);
         //save up to 5 photos in the server
@@ -59,7 +59,7 @@
             }
             for($i = 0; $i < $numPhoto; $i++) {
                 $photoReference = $jsonDetail['result']['photos'][$i]['photo_reference'];
-                $urlOfPhoto = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1000&photoreference=".$photoReference."&key=AIzaSyDhC1Tha8FKORJfe7--SYluRWe_n1LVMoE";
+                $urlOfPhoto = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1000&photoreference=".$photoReference."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
                 $photos = file_get_contents($urlOfPhoto);
                 file_put_contents('photo'.$i.'.jpg', $photos);
             }
@@ -69,6 +69,15 @@
         $jsonDetail['numPhoto'] = $numPhoto;
         $jsonObj = json_encode($jsonDetail);
         echo $jsonObj;
+        exit;
+    }
+
+    if(isset($_GET['markerLocation'])) {
+        $urlOfLocation = "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$_GET['markerLocation']."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
+        $jsonLocation = file_get_contents($urlOfLocation);
+        $jsonLocation = json_decode($jsonLocation, true);
+        $jsonLocation = json_encode($jsonLocation);
+        echo $jsonLocation;
         exit;
     }
 
@@ -120,10 +129,38 @@
             left:420px;
         }
 
+        .hideMap {
+            display: none;
+        }
+
+        .showMap {
+            display: block;
+        }
+
+        #map {
+            position: absolute;
+            left: 750px;
+            top: 380px;
+            height: 300px;
+            width: 400px;  
+        }
+
         #from {
             display: inline; 
             position: absolute; 
         }
+
+        #vicinity a {
+            color: black;
+            text-decoration: none; 
+        }
+
+        #vicinity a:hover {
+            color: rgb(200, 200, 200);
+            transition: 0.2s linear;
+        }
+
+
 
     </style>
 
@@ -173,7 +210,7 @@
             </div>
             <div class="submit">
                 <input id="search" type="submit" name="search" value="Search" style="font-size: 15px" disabled>
-                <input id="clear" type="submit" name="clear" value="Clear" style="font-size: 15px" formnovalidate="formnovalidate" onclick="clearAll()">
+                <input id="clear" type="button" name="clear" value="Clear" style="font-size: 15px" onclick="clearAll()">
             </div>        
         </div>
     </form>
@@ -247,19 +284,15 @@
         }
 
         function clearAll() {
-            document.getElementById("keyword").value = "";
-            document.getElementById("category").value = "default";
-            document.getElementById("distance").value = "10";
-            document.getElementById("otherLocation").value = "";
+            document.getElementById("searchForm").reset();
+            init(lat, lon);
             document.getElementById("otherLocation").disabled = true;
-            document.getElementById("otherLocation").check = false;
-            document.getElementById("here").checked = true;
-            document.getElementById("div").innerHTML = "";
+            if(document.getElementById("div") != null) {
+                document.getElementById("div").innerHTML = "";    
+            }
         }
 
-        // need to work on!!!!!
         function showDetail(element) {
-
             var selectedPlace = element.getAttribute('id');
             var xhr = new XMLHttpRequest();
             var url = "place.php?place_id=" + selectedPlace + "&para2=" + Math.random();
@@ -283,13 +316,11 @@
 
                     // set up the review list
                     var resultObj = jsonObj.result;
-                    // if there is no review
                     if(resultObj.reviews === undefined || resultObj.reviews.length == 0) {
                         html_text = "<div style='width: 800px; margin: 0 auto; border: 2px solid #cccccc; font-size: 20px; font-weight: 600; text-align: center;'>No Reviews Found</div>";
                             document.getElementById("reviewList").innerHTML = html_text;
                     } else {
                         html_text = "<table border = '1' style='margin: 0 auto'; width='800px'><tr>";
-                        // if number of reviews is less than 5
                         if(resultObj.reviews.length > 0 && resultObj.reviews.length < 5) {
                             numReview = resultObj.reviews.length;
                         } else {
@@ -320,7 +351,7 @@
             } else {
                 html_text = "<table border='1' style='margin: 0 auto; width: 800px'><tr>";
                 for(var i = 0; i < numPhoto; i++) {
-                    html_text += "<td style='text-align: center'><a href='photo" + i + ".jpg' target='_blank'><img src='photo" + i + ".jpg' style='padding: 20px' width='730px'></a></td></tr>";
+                    html_text += "<td style='text-align: center'><a href='photo" + i + ".jpg' target='_blank'><img src='photo" + i + ".jpg?ran=" + Math.random + "' style='padding: 20px' width='730px'></a></td></tr>";
                 }
                 html_text += "</table>";
                 document.getElementById("photoList").innerHTML = html_text;
@@ -337,7 +368,6 @@
             document.getElementById('photoList').style.display = "none";
             document.getElementById("photoButton").innerHTML = "<a href='javaScript:void(0)' onclick='showPhoto(" + numPhoto + ")'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a>";
         }
-
 
         // construct the place table
         jsonPlace = <?php echo $jsonPlace; ?>;
@@ -359,15 +389,71 @@
                     html_text += "<tr style='font-size: 20px'>";
                     html_text += "<td style='padding-left: 20px'><img src='" + placeObj["icon"] + "'</td>";
                     html_text += "<td style='padding-left: 20px'><a href='javaScript:void(0)'style='text-decoration: none; color: black;' onclick='showDetail(this)' id='" + placeObj["place_id"] + "'>" + placeObj["name"] + "</a></td>";
-                    html_text += "<td style='padding-left: 20px'>" + placeObj["vicinity"] + "</td>";
+                    html_text += "<td  id='vicinity' style='padding-left: 20px'><a href='javaScript:void(0)' onclick='initMap(\"" + placeObj['place_id'] + "\", " + i + ")'>" + placeObj["vicinity"] + "</a></td>";
                     html_text += "</tr></tbody>";
+                    html_text += "<div id='map' class='hideMap'></div>";
+
                 }
             }      
             var div = document.createElement('div');
             div.setAttribute("id", "div");
             document.body.appendChild(div);
-            document.getElementById("div").innerHTML = html_text;  
+            document.getElementById("div").innerHTML = html_text;
         } 
+
+        orderPhoto = -1;
+        function initMap(place_id, order) {
+            var xhr = new XMLHttpRequest();
+            var url = "place.php?markerLocation=" + place_id + "&para2=" + Math.random();
+            xhr.open("get", url, true);
+            xhr.onreadystatechange = function() {
+                if(xhr.readyState == 4 && xhr.status == 200) {
+                    var jsonLocation = xhr.responseText;
+                    jsonLocation = JSON.parse(jsonLocation);
+
+                    var lat = jsonLocation.result.geometry.location.lat;
+                    var lng = jsonLocation.result.geometry.location.lng;
+                    var markerLocation = {lat: lat, lng: lng};
+                    var map = new google.maps.Map(document.querySelector("#map"), {
+                        zoom: 4,
+                        center: markerLocation
+                    });
+                    if(orderPhoto == -1) {
+                        sizeMap = order * 84 + 380;
+                        document.querySelector("#map").style.top = sizeMap + "px";
+                        document.querySelector("#map").classList.toggle("showMap");
+                    } else {
+                        document.querySelector("#map").classList.toggle("showMap");
+                        if(order != orderPhoto) {
+                            sizeMap = order * 84 + 380;
+                            document.querySelector("#map").style.top = sizeMap + "px";
+                            document.querySelector("#map").classList.toggle("showMap");
+                        }
+                    }
+                    orderPhoto = order;
+                    var marker = new google.maps.Marker({
+                        position: markerLocation,
+                        map: map
+                    });
+                }
+            };
+            xhr.send();
+        }
+
+        function calcRoute() {
+          var start = document.getElementById('start').value;
+          var end = document.getElementById('end').value;
+          var request = {
+            origin: start,
+            destination: end,
+            travelMode: 'DRIVING'
+          };
+          directionsService.route(request, function(result, status) {
+            if (status == 'OK') {
+              directionsDisplay.setDirections(result);
+            }
+          });
+        }
 
         // Create table without refresh page????
 
@@ -401,6 +487,10 @@
        
 
     </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhC1Tha8FKORJfe7--SYluRWe_n1LVMoE">
+    </script>
+
 
 </body>
 </html>
