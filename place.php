@@ -42,34 +42,52 @@
         $jsonPlace = json_encode($jsonPlace);
     }
 
-    // get the place_id and save up to 5 photos in the server
+
     if(isset($_GET['place_id'])) {
         $urlOfDetail = "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$_GET['place_id']."&key=AIzaSyDhC1Tha8FKORJfe7--SYluRWe_n1LVMoE";
         $jsonDetail = file_get_contents($urlOfDetail);
-        $jsonDetailPhoto = json_decode($jsonDetail, true);
-
-        if(!isset($jsonDetailPhoto['result']['photos'])) {
+        $jsonDetail = json_decode($jsonDetail, true);
+        //save up to 5 photos in the server
+        if(!isset($jsonDetail['result']['photos'])) {
             $numPhoto = 0;
         } else {
-            $countPhoto = count($jsonDetailPhoto['result']['photos']);
+            $countPhoto = count($jsonDetail['result']['photos']);
             if($countPhoto > 0 && $countPhoto < 5) {
                 $numPhoto = $countPhoto;
             } else {
                 $numPhoto = 5;
             }
             for($i = 0; $i < $numPhoto; $i++) {
-                $photoReference = $jsonDetailPhoto['result']['photos'][$i]['photo_reference'];
+                $photoReference = $jsonDetail['result']['photos'][$i]['photo_reference'];
                 $urlOfPhoto = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=1000&photoreference=".$photoReference."&key=AIzaSyDhC1Tha8FKORJfe7--SYluRWe_n1LVMoE";
                 $photos = file_get_contents($urlOfPhoto);
                 file_put_contents('photo'.$i.'.jpg', $photos);
             }
         }
-        echo $numPhoto;
+        //save up to 5 reviews in the server
+        if(!isset($jsonDetail['result']['reviews'])) {
+            $numReview = 0;
+        } else {
+            $countReview = count($jsonDetail['result']['reviews']);
+            if($countReview > 0 && $countReview < 5) {
+                $numReview = $countReview;
+            } else {
+                $numReview = 5;
+            }
+        }
+        // Add numPhoto to $jsonDetail array and encode array, then return the json object to client
+        $jsonDetail['numPhoto'] = $numPhoto;
+        $jsonObj = json_encode($jsonDetail);
+        echo $jsonObj;
+
         exit;
     }
-
-
-
+    
+    // $json111->num = "5";
+    // // Warning: Creating default object from empty value in /home/scf-11/yutaoren/apache2/htdocs/place.php
+    // echo $json111;
+    // // Catchable fatal error: Object of class stdClass could not be converted to string in /home/scf-11/yutaoren/apache2/htdocs/place.php on line 88
+    // echo json_encode($json111);
 
     ?>
 
@@ -254,8 +272,12 @@
             xhr.open("get", url, true);
             xhr.onreadystatechange = function() {
                 if(xhr.readyState == 4 && xhr.status == 200) {
-                    var numPhoto = xhr.responseText;
-                    console.log(numPhoto);
+                    var jsonObj = xhr.responseText;
+                         console.log(jsonObj);
+                    jsonObj = JSON.parse(jsonObj);
+                                        console.log(jsonObj);
+
+                    numPhoto = jsonObj.numPhoto;
 
             // create the menu of photos and reviews
             placeName = element.textContent;
