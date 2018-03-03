@@ -320,7 +320,7 @@
             } else {
                 html_text = "<table border='1' style='margin: 0 auto; width: 800px'><tr>";
                 for(var i = 0; i < numPhoto; i++) {
-                    html_text += "<td style='text-align: center'><a href='photo" + i + ".jpg' target='_blank'><img src='photo" + i + ".jpg?ran=" + Math.random + "' style='padding: 20px' width='730px'></a></td></tr>";
+                    html_text += "<td style='text-align: center'><a href='photo" + i + ".jpg' target='_blank'><img src='photo" + i + ".jpg?ran=" + Math.random() + "' style='padding: 20px' width='730px'></a></td></tr>";
                 }
                 html_text += "</table>";
                 document.getElementById("photoList").innerHTML = html_text;
@@ -404,10 +404,10 @@
                     var lng = jsonLocation.result.geometry.location.lng;
                     var markerLocation = {lat: lat, lng: lng};
                     var map = new google.maps.Map(document.querySelector("#map"), {
-                        zoom: 4,
+                        zoom: 14,
                         center: markerLocation
                     });
-                    
+
                     // if the map is open the first time
                     // if(orderPhoto == -1) {
                     //     sizeMap = order * 84 + 380;
