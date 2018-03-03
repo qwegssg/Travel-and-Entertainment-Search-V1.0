@@ -64,30 +64,13 @@
                 file_put_contents('photo'.$i.'.jpg', $photos);
             }
         }
-        //save up to 5 reviews in the server
-        if(!isset($jsonDetail['result']['reviews'])) {
-            $numReview = 0;
-        } else {
-            $countReview = count($jsonDetail['result']['reviews']);
-            if($countReview > 0 && $countReview < 5) {
-                $numReview = $countReview;
-            } else {
-                $numReview = 5;
-            }
-        }
-        // Add numPhoto to $jsonDetail array and encode array, then return the json object to client
+        // gather data into $jsonDetail associative array
+        // encode array, return the JSON object to the client side
         $jsonDetail['numPhoto'] = $numPhoto;
         $jsonObj = json_encode($jsonDetail);
         echo $jsonObj;
-
         exit;
     }
-    
-    // $json111->num = "5";
-    // // Warning: Creating default object from empty value in /home/scf-11/yutaoren/apache2/htdocs/place.php
-    // echo $json111;
-    // // Catchable fatal error: Object of class stdClass could not be converted to string in /home/scf-11/yutaoren/apache2/htdocs/place.php on line 88
-    // echo json_encode($json111);
 
     ?>
 
@@ -190,7 +173,7 @@
             </div>
             <div class="submit">
                 <input id="search" type="submit" name="search" value="Search" style="font-size: 15px" disabled>
-                <input id="clear" type="submit" name="clear" value="Clear" style="font-size: 15px">
+                <input id="clear" type="submit" name="clear" value="Clear" style="font-size: 15px" formnovalidate="formnovalidate" onclick="clearAll()">
             </div>        
         </div>
     </form>
@@ -263,6 +246,17 @@
             document.getElementById("otherLocation").required = true;
         }
 
+        function clearAll() {
+            document.getElementById("keyword").value = "";
+            document.getElementById("category").value = "default";
+            document.getElementById("distance").value = "10";
+            document.getElementById("otherLocation").value = "";
+            document.getElementById("otherLocation").disabled = true;
+            document.getElementById("otherLocation").check = false;
+            document.getElementById("here").checked = true;
+            document.getElementById("div").innerHTML = "";
+        }
+
         // need to work on!!!!!
         function showDetail(element) {
 
@@ -273,32 +267,49 @@
             xhr.onreadystatechange = function() {
                 if(xhr.readyState == 4 && xhr.status == 200) {
                     var jsonObj = xhr.responseText;
-                         console.log(jsonObj);
                     jsonObj = JSON.parse(jsonObj);
-                                        console.log(jsonObj);
+                    var numPhoto = jsonObj.numPhoto;
+                    // create the menu of photos and reviews
+                    placeName = element.textContent;
+                    html_text = "<div style='font-size: 25px; font-weight: 600; padding-top: 10px; padding-bottom: 50px; text-align: center;'>" + placeName + "</div>";
+                    html_text += "<div style='font-size: 20px; text-align: center;'>click to show reviews</div>" ;
+                    html_text += "<div id='reviewButton' style='text-align: center'><a href='javaScript:void(0)' onclick='showReview()'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a></div>";
+                    html_text += "<div id='reviewList' style='display: none'></div>";
+                    html_text += "<br>";
+                    html_text += "<div style='font-size: 20px; text-align: center;'>click to show photos</div>";
+                    html_text += "<div id='photoButton' style='text-align: center'><a href='javaScript:void(0)' onclick='showPhoto(" + numPhoto + ")'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a></div>";
+                    html_text += "<div id='photoList' style='display: none'></div>";
+                    document.getElementById("div").innerHTML = html_text;
 
-                    numPhoto = jsonObj.numPhoto;
-
-            // create the menu of photos and reviews
-            placeName = element.textContent;
-            html_text = "<div style='font-size: 25px; font-weight: 600; padding-bottom: 50px; text-align: center;'>" + placeName + "</div>";
-            html_text += "<div style='font-size: 20px; text-align: center;'>click to show reviews</div>" ;
-            html_text += "<div id='reviewButton' style='text-align: center'><a href='javaScript:void(0)' onclick='showReview()'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a></div>";
-            html_text += "<div id='reviewList' style='display: none'></div>";
-            html_text += "<br>";
-            html_text += "<div style='font-size: 20px; text-align: center;'>click to show photos</div>";
-            html_text += "<div id='photoButton' style='text-align: center'><a href='javaScript:void(0)' onclick='showPhoto(" + numPhoto + ")'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a></div>";
-            html_text += "<div id='photoList' style='display: none'></div>";
-            document.getElementById("div").innerHTML = html_text;
+                    // set up the review list
+                    var resultObj = jsonObj.result;
+                    // if there is no review
+                    if(resultObj.reviews === undefined || resultObj.reviews.length == 0) {
+                        html_text = "<div style='width: 800px; margin: 0 auto; border: 2px solid #cccccc; font-size: 20px; font-weight: 600; text-align: center;'>No Reviews Found</div>";
+                            document.getElementById("reviewList").innerHTML = html_text;
+                    } else {
+                        html_text = "<table border = '1' style='margin: 0 auto'; width='800px'><tr>";
+                        // if number of reviews is less than 5
+                        if(resultObj.reviews.length > 0 && resultObj.reviews.length < 5) {
+                            numReview = resultObj.reviews.length;
+                        } else {
+                            numReview = 5;
+                        }
+                        for(var i = 0; i < numReview; i++) {
+                            html_text += "<td style='text-align: center; font-weight: 600; font-size: 20px'><img src='" + resultObj.reviews[i].profile_photo_url + "' width='40px'>" + resultObj.reviews[i].author_name + "</td></tr>";
+                            html_text += "<tr><td style='font-size: 20px'>" + resultObj.reviews[i].text + "</td></tr>";
+                        }
+                        html_text += "</table>";
+                        document.getElementById("reviewList").innerHTML = html_text;
+                    }
                 }
             };
             xhr.send();
-
-
         }
 
         function showReview() {
-
+            document.getElementById("reviewButton").innerHTML = "<a href='javaScript:void(0)' onclick='hideReview()'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_up.png' width='40px'></a>";
+            document.getElementById("reviewList").style.display = "block"; 
         }
 
         function showPhoto(numPhoto) {
@@ -317,10 +328,16 @@
             document.getElementById("photoList").style.display = "block"; 
         }
 
+        function hideReview() {
+            document.getElementById('reviewList').style.display = "none";
+            document.getElementById("reviewButton").innerHTML = "<a href='javaScript:void(0)' onclick='showReview()'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a>";
+        }
+
         function hidePhoto(numPhoto) {
             document.getElementById('photoList').style.display = "none";
             document.getElementById("photoButton").innerHTML = "<a href='javaScript:void(0)' onclick='showPhoto(" + numPhoto + ")'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a>";
         }
+
 
         // construct the place table
         jsonPlace = <?php echo $jsonPlace; ?>;
