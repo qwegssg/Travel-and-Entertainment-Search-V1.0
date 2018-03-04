@@ -42,7 +42,6 @@
         echo $jsonPlace;
         exit;
     }
-  
 
     if(isset($_GET['place_id'])) {
         $urlOfDetail = "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$_GET['place_id']."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
@@ -164,7 +163,8 @@
     </style>
 </head>
 <body>
-    <!-- return false: stop the form post on a false returned value. -->
+
+    <!-- "return false": avoid submitting the form. -->
     <form method="post" action="place.php" id="searchForm" onsubmit="submitForm(event); return false">
         <h1>Travel and Entertainment Search</h1>
         <hr>
@@ -338,11 +338,7 @@
             document.getElementById("photoButton").innerHTML = "<a href='javaScript:void(0)' onclick='showPhoto(" + numPhoto + ")'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a>";
         }
         
-        function submitForm(event){
-            // prevent submitting form and also invalid requiring input field
-            event.preventDefault();
-            document.getElementById("keyword").required = true;
-            document.getElementById("otherLocation").required = true;
+        function submitForm(event) {
             var form = document.getElementById("searchForm");
             // gather form data
             var formData = new FormData(form);
@@ -350,6 +346,7 @@
               console.log(key + ': ' + value);
             }
             var xhr = new XMLHttpRequest();
+            // use AJAX to post form data
             xhr.open("post", "place.php", true);
             xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
             xhr.onreadystatechange = function() {
