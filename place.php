@@ -24,6 +24,10 @@
         // user checked "Here" button
         else {
             $location = $_POST['location'];
+            $urlOfMap = "https://maps.googleapis.com/maps/api/geocode/json?address=".urlencode($_POST['location'])."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
+            $arrayOfMap = json_decode(file_get_contents($urlOfMap), true);
+            $latGeo = $arrayOfMap['results']['0']['geometry']['location']['lat'];
+            $lngGeo = $arrayOfMap['results']['0']['geometry']['location']['lng'];
         }
 
         $radius = $_POST['distance'] * 1600;
@@ -38,6 +42,8 @@
         }
         $jsonPlace = file_get_contents($urlOfPlace);
         $jsonPlace = json_decode($jsonPlace, true);
+        $jsonPlace['latGeo'] = $latGeo;
+        $jsonPlace['lngGeo'] = $lngGeo;
         $jsonPlace = json_encode($jsonPlace);
         echo $jsonPlace;
         exit;
@@ -72,14 +78,14 @@
         exit;
     }
 
-    if(isset($_GET['markerLocation'])) {
-        $urlOfLocation = "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$_GET['markerLocation']."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
-        $jsonLocation = file_get_contents($urlOfLocation);
-        $jsonLocation = json_decode($jsonLocation, true);
-        $jsonLocation = json_encode($jsonLocation);
-        echo $jsonLocation;
-        exit;
-    }
+    // if(isset($_GET['markerLocation'])) {
+    //     $urlOfLocation = "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$_GET['markerLocation']."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
+    //     $jsonLocation = file_get_contents($urlOfLocation);
+    //     $jsonLocation = json_decode($jsonLocation, true);
+    //     $jsonLocation = json_encode($jsonLocation);
+    //     echo $jsonLocation;
+    //     exit;
+    // }
 
     ?>
 
@@ -143,6 +149,56 @@
             top: 380px;
             height: 300px;
             width: 400px;  
+        }
+
+        #direction {
+            position: absolute;
+            left: 750px;
+            top: 380px;
+            z-index: 2;
+            text-align: center;
+            font-weight: 600;
+            font-size: 15px;
+            background-color: #f0f0f0;
+        }
+
+        #walk {
+            position: relative;
+            height: 40px;
+            width: 100px; 
+            line-height: 40px;
+            cursor: pointer;
+        }
+
+        #walk:hover {
+            background-color: #dcdcdc;
+            transition: 0.2s linear;
+        }
+
+        #bike {
+            position: relative;
+            height: 40px;
+            width: 100px; 
+            line-height: 40px;
+            cursor: pointer;
+        }
+
+        #bike:hover {
+            background-color: #dcdcdc;
+            transition: 0.2s linear;
+        }        
+
+        #drive {
+            position: relative;
+            height: 40px;
+            width: 100px; 
+            line-height: 40px;            
+            cursor: pointer;
+        }
+
+        #drive:hover {
+            background-color: #dcdcdc;
+            transition: 0.2s linear;
         }
 
         #from {
@@ -353,10 +409,13 @@
                 if(xhr.readyState == 4 && xhr.status == 200) {
                     var jsonPlace = xhr.responseText;
                     jsonPlace = JSON.parse(jsonPlace);
+
                     if(jsonPlace.status == "ZERO_RESULTS") {
                         html_text = "<div style='background-color: #f0f0f0; width: 900px; margin: 0 auto; border: 2px solid #cccccc; font-size: 20px; text-align: center;'>No Record has been found</div>";
                     } else {
                         var rows = jsonPlace.results;
+                        var startLat = jsonPlace.latGeo;
+                        var startLng = jsonPlace.lngGeo;
                         if(rows.length == 0) {
                             html_text = "<div style='background-color: #f0f0f0; width: 900px; margin: 0 auto; border: 2px solid #cccccc; font-size: 20px; text-align: center;'>No Record has been found</div>";
                         }
@@ -372,9 +431,14 @@
                                 html_text += "<tr style='font-size: 20px'>";
                                 html_text += "<td style='padding-left: 20px'><img src='" + placeObj["icon"] + "'</td>";
                                 html_text += "<td style='padding-left: 20px'><a href='javaScript:void(0)'style='text-decoration: none; color: black;' onclick='showDetail(this)' id='" + placeObj["place_id"] + "'>" + placeObj["name"] + "</a></td>";
-                                html_text += "<td  id='vicinity' style='padding-left: 20px'><a href='javaScript:void(0)' onclick='initMap(\"" + placeObj['place_id'] + "\", " + i + ")'>" + placeObj["vicinity"] + "</a></td>";
+                                html_text += "<td  id='vicinity' style='padding-left: 20px'><a href='javaScript:void(0)' onclick='initMap(" + placeObj['geometry']['location']['lat'] + ", " + placeObj['geometry']['location']['lng'] + ", " + i + ")'>" + placeObj["vicinity"] + "</a></td>";
                                 html_text += "</tr></tbody>";
                                 html_text += "<div id='map' class='hideMap'></div>";
+                                html_text += "<div id='direction' class='hideMap'>";
+                                html_text += "<div id='walk'>Walk there</div>";
+                                html_text += "<div id='bike'>Bike there</div>";
+                                html_text += "<div id='drive' onclick='calcRouteDrive(" + placeObj['geometry']['location']['lat'] + ", " + placeObj['geometry']['location']['lng'] + ", " + startLat + ", " + startLng + ")'>Drive there</div>";
+                                html_text += "</div>";
                             }
                         }      
                     }
@@ -387,105 +451,85 @@
             xhr.send(formData);
         }
 
-        orderPhoto = -1;
-        function initMap(place_id, order) {
-            var xhr = new XMLHttpRequest();
-            var url = "place.php?markerLocation=" + place_id + "&para2=" + Math.random();
-            xhr.open("get", url, true);
-            xhr.onreadystatechange = function() {
-                if(xhr.readyState == 4 && xhr.status == 200) {
-                    var jsonLocation = xhr.responseText;
-                    jsonLocation = JSON.parse(jsonLocation);
+        function initMap(latitude, longitude, order) {
 
-                    var lat = jsonLocation.result.geometry.location.lat;
-                    var lng = jsonLocation.result.geometry.location.lng;
-                    var markerLocation = {lat: lat, lng: lng};
-                    var map = new google.maps.Map(document.querySelector("#map"), {
-                        zoom: 14,
-                        center: markerLocation
-                    });
-
-                    // if the map is open the first time
-                    // if(orderPhoto == -1) {
-                    //     sizeMap = order * 84 + 380;
-                    //     document.querySelector("#map").style.top = sizeMap + "px";
-                    //     document.querySelector("#map").style.display = "block";
-                    // } else {
-                    //     // if the map is open
-                    //     if(document.querySelector("#map").style.display = "block") {
-                    //         if(order != orderPhoto) {
-                    //             document.querySelector("#map").style.display = "none";
-                    //             sizeMap = order * 84 + 380;
-                    //             document.querySelector("#map").style.top = sizeMap + "px";
-                    //             document.querySelector("#map").style.display = "block";
-                    //         } else {
-                    //             document.querySelector("#map").style.display = "none";
-                    //         }
-                    //     // if the map is closed
-                    //     } else if(document.querySelector("#map").style.display = "none") {
-                    //         if(order != orderPhoto) {
-                    //             sizeMap = order * 84 + 380;
-                    //             document.querySelector("#map").style.top = sizeMap + "px";
-                    //             document.querySelector("#map").style.display = "block";
-                    //         } else {
-                    //             document.querySelector("#map").style.display = "block";
-                    //         }
-                    //     }
-                    // }
-
-                    // first time
-                    if(orderPhoto == -1) {
-                        sizeMap = order * 84 + 380;
-                        document.querySelector("#map").style.top = sizeMap + "px";
-                        document.querySelector("#map").classList.add("showMap");
-                    } else {
-                    // if the map is open
-                        if(document.querySelector("#map").classList.contains("showMap")) {
-                            if(order != orderPhoto) {
-                                document.querySelector("#map").classList.remove("showMap");
-                                sizeMap = order * 84 + 380;
-                                document.querySelector("#map").style.top = sizeMap + "px";
-                                document.querySelector("#map").classList.add("showMap");
-                            } else {
-                                document.querySelector("#map").classList.remove("showMap");
-                            }
-                    // if the map is closed
-                        } else {
-                            if(order != orderPhoto) {
-                                sizeMap = order * 84 + 380;
-                                document.querySelector("#map").style.top = sizeMap + "px";
-                                document.querySelector("#map").classList.add("showMap");
-                            } else {
-                                document.querySelector("#map").classList.add("showMap");
-                            }
-                        }
-                    }
-                    orderPhoto = order;
-                    // add marker to map
-                    var marker = new google.maps.Marker({
-                        position: markerLocation,
-                        map: map
-                    });
-                }
+            var directionsDisplay = new google.maps.DirectionsRenderer();
+            var markerLocation = {lat: latitude, lng: longitude};
+            var mapOptions = {
+                zoom: 14,
+                center: markerLocation    
             }
-            xhr.send();
+            var map = new google.maps.Map(document.querySelector("#map"), mapOptions);
+            directionsDisplay.setMap(map);
+
+            displayMap(order);
+
+            // display marker
+            var marker = new google.maps.Marker({
+                position: markerLocation,
+                map: map
+            });
         }
 
-        // wait to be implemented!!!!
-        // function calcRoute() {
-        //   var start = document.getElementById('start').value;
-        //   var end = document.getElementById('end').value;
-        //   var request = {
-        //     origin: start,
-        //     destination: end,
-        //     travelMode: 'DRIVING'
-        //   };
-        //   directionsService.route(request, function(result, status) {
-        //     if (status == 'OK') {
-        //       directionsDisplay.setDirections(result);
-        //     }
-        //   });
-        // }
+        orderPhoto = -1;
+        function displayMap(order) {
+            // display the first time
+            if(orderPhoto == -1) {
+                sizeMap = order * 84 + 380;
+                document.querySelector("#map").style.top = sizeMap + "px";
+                document.querySelector("#direction").style.top = sizeMap + "px";
+                document.querySelector("#map").classList.add("showMap");
+                document.querySelector("#direction").classList.add("showMap");
+            } else {
+            // if the map is open
+                if(document.querySelector("#map").classList.contains("showMap")) {
+                    if(order != orderPhoto) {
+                        document.querySelector("#map").classList.remove("showMap");
+                        document.querySelector("#direction").classList.remove("showMap");
+                        sizeMap = order * 84 + 380;
+                        document.querySelector("#map").style.top = sizeMap + "px";
+                        document.querySelector("#direction").style.top = sizeMap + "px";
+                        document.querySelector("#map").classList.add("showMap");
+                        document.querySelector("#direction").classList.add("showMap");
+                    } else {
+                        document.querySelector("#map").classList.remove("showMap");
+                        document.querySelector("#direction").classList.remove("showMap");
+                    }
+            // if the map is closed
+                } else {
+                    if(order != orderPhoto) {
+                        sizeMap = order * 84 + 380;
+                        document.querySelector("#map").style.top = sizeMap + "px";
+                        document.querySelector("#direction").style.top = sizeMap + "px";
+                        document.querySelector("#map").classList.add("showMap");
+                        document.querySelector("#direction").classList.add("showMap");
+                    } else {
+                        document.querySelector("#map").classList.add("showMap");
+                        document.querySelector("#direction").classList.add("showMap");
+                    }
+                }
+            }
+            orderPhoto = order;
+        }
+
+        function calcRouteDrive(latitude, longitude, startLat, startLng) {
+            var directionsService = new google.maps.DirectionsService();
+            var directionsDisplay = new google.maps.DirectionsRenderer();
+
+            var start = {lat: startLat, lng: startLng};
+            var end = {lat: latitude, lng: longitude};
+            console.log(end);
+            var request = {
+            origin: start,
+            destination: end,
+            travelMode: 'DRIVING'
+            };
+            directionsService.route(request, function(result, status) {
+                if (status == 'OK') {
+                  directionsDisplay.setDirections(result);
+                }
+            });
+        }
 
 
     </script>
