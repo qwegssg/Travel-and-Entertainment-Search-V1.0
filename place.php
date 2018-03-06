@@ -78,15 +78,6 @@
         exit;
     }
 
-    // if(isset($_GET['markerLocation'])) {
-    //     $urlOfLocation = "https://maps.googleapis.com/maps/api/place/details/json?placeid=".$_GET['markerLocation']."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
-    //     $jsonLocation = file_get_contents($urlOfLocation);
-    //     $jsonLocation = json_decode($jsonLocation, true);
-    //     $jsonLocation = json_encode($jsonLocation);
-    //     echo $jsonLocation;
-    //     exit;
-    // }
-
     ?>
 
 <!DOCTYPE html>
@@ -317,6 +308,63 @@
             }
         }
 
+        function submitForm(event) {
+            var form = document.getElementById("searchForm");
+            // gather form data
+            var formData = new FormData(form);
+            for([key, value] of formData.entries()) {
+              console.log(key + ': ' + value);
+            }
+            var xhr = new XMLHttpRequest();
+            // use AJAX to post form data
+            xhr.open("post", "place.php", true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.onreadystatechange = function() {
+                if(xhr.readyState == 4 && xhr.status == 200) {
+                    var jsonPlace = xhr.responseText;
+                    jsonPlace = JSON.parse(jsonPlace);
+
+                    if(jsonPlace.status == "ZERO_RESULTS") {
+                        html_text = "<div style='background-color: #f0f0f0; width: 900px; margin: 0 auto; border: 2px solid #cccccc; font-size: 20px; text-align: center;'>No Record has been found</div>";
+                    } else {
+                        var rows = jsonPlace.results;
+                        var startLat = jsonPlace.latGeo;
+                        var startLng = jsonPlace.lngGeo;
+                        if(rows.length == 0) {
+                            html_text = "<div style='background-color: #f0f0f0; width: 900px; margin: 0 auto; border: 2px solid #cccccc; font-size: 20px; text-align: center;'>No Record has been found</div>";
+                        }
+                        else {
+                            html_text = "<table border='1' style='margin: 0 auto'><thead style='font-size: 20px'><tr>";
+                            html_text +="<th style='width: 150px'>Category</th>";
+                            html_text +="<th style='width: 450px'>Name</th>";
+                            html_text +="<th style='width: 600px'>Address</th>";
+                            html_text += "</tr></thead>";
+                            html_text += "<tbody>";
+                            for(var i = 0; i < rows.length; i++) {     
+                                placeObj = rows[i];
+                                html_text += "<tr style='font-size: 20px'>";
+                                html_text += "<td style='padding-left: 20px'><img src='" + placeObj["icon"] + "'</td>";
+                                html_text += "<td style='padding-left: 20px'><a href='javaScript:void(0)' style='text-decoration: none; color: black;' onclick='showDetail(this)' id='" + placeObj["place_id"] + "'>" + placeObj["name"] + "</a></td>";
+                                html_text += "<td  id='vicinity' style='padding-left: 20px'><a href='javaScript:void(0)' onclick='initMap(" + placeObj['geometry']['location']['lat'] + ", " + placeObj['geometry']['location']['lng'] + ", " + i + ", " + startLat + ", " + startLng + ")'>" + placeObj["vicinity"] + "</a></td>";
+                                html_text += "</tr></tbody>";
+                            }
+                            html_text += "<div id='map' class='hideMap'></div>";
+                            html_text += "<div id='direction' class='hideMap'>";
+                            html_text += "<div id='walk'>Walk there</div>";
+                            html_text += "<div id='bike'>Bike there</div>";
+                            html_text += "<div id='drive'>Drive there</div>";
+                            html_text += "</div>";
+                        }      
+                    }
+                    var div = document.createElement('div');
+                    div.setAttribute("id", "div");
+                    document.body.appendChild(div);
+                    document.getElementById("div").innerHTML = html_text;
+                } 
+            };
+            xhr.send(formData);
+        }
+
         function showDetail(element) {
             var selectedPlace = element.getAttribute('id');
             var xhr = new XMLHttpRequest();
@@ -394,80 +442,33 @@
             document.getElementById("photoButton").innerHTML = "<a href='javaScript:void(0)' onclick='showPhoto(" + numPhoto + ")'><img src='http://cs-server.usc.edu:45678/hw/hw6/images/arrow_down.png' width='40px'></a>";
         }
         
-        function submitForm(event) {
-            var form = document.getElementById("searchForm");
-            // gather form data
-            var formData = new FormData(form);
-            for([key, value] of formData.entries()) {
-              console.log(key + ': ' + value);
-            }
-            var xhr = new XMLHttpRequest();
-            // use AJAX to post form data
-            xhr.open("post", "place.php", true);
-            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
-            xhr.onreadystatechange = function() {
-                if(xhr.readyState == 4 && xhr.status == 200) {
-                    var jsonPlace = xhr.responseText;
-                    jsonPlace = JSON.parse(jsonPlace);
-
-                    if(jsonPlace.status == "ZERO_RESULTS") {
-                        html_text = "<div style='background-color: #f0f0f0; width: 900px; margin: 0 auto; border: 2px solid #cccccc; font-size: 20px; text-align: center;'>No Record has been found</div>";
-                    } else {
-                        var rows = jsonPlace.results;
-                        var startLat = jsonPlace.latGeo;
-                        var startLng = jsonPlace.lngGeo;
-                        if(rows.length == 0) {
-                            html_text = "<div style='background-color: #f0f0f0; width: 900px; margin: 0 auto; border: 2px solid #cccccc; font-size: 20px; text-align: center;'>No Record has been found</div>";
-                        }
-                        else {
-                            html_text = "<table border='1' style='margin: 0 auto'><thead style='font-size: 20px'><tr>";
-                            html_text +="<th style='width: 150px'>Category</th>";
-                            html_text +="<th style='width: 450px'>Name</th>";
-                            html_text +="<th style='width: 600px'>Address</th>";
-                            html_text += "</tr></thead>";
-                            html_text += "<tbody>";
-                            for(var i = 0; i < rows.length; i++) {     
-                                placeObj = rows[i];
-                                html_text += "<tr style='font-size: 20px'>";
-                                html_text += "<td style='padding-left: 20px'><img src='" + placeObj["icon"] + "'</td>";
-                                html_text += "<td style='padding-left: 20px'><a href='javaScript:void(0)'style='text-decoration: none; color: black;' onclick='showDetail(this)' id='" + placeObj["place_id"] + "'>" + placeObj["name"] + "</a></td>";
-                                html_text += "<td  id='vicinity' style='padding-left: 20px'><a href='javaScript:void(0)' onclick='initMap(" + placeObj['geometry']['location']['lat'] + ", " + placeObj['geometry']['location']['lng'] + ", " + i + ")'>" + placeObj["vicinity"] + "</a></td>";
-                                html_text += "</tr></tbody>";
-                                html_text += "<div id='map' class='hideMap'></div>";
-                                html_text += "<div id='direction' class='hideMap'>";
-                                html_text += "<div id='walk'>Walk there</div>";
-                                html_text += "<div id='bike'>Bike there</div>";
-                                html_text += "<div id='drive' onclick='calcRouteDrive(" + placeObj['geometry']['location']['lat'] + ", " + placeObj['geometry']['location']['lng'] + ", " + startLat + ", " + startLng + ")'>Drive there</div>";
-                                html_text += "</div>";
-                            }
-                        }      
-                    }
-                    var div = document.createElement('div');
-                    div.setAttribute("id", "div");
-                    document.body.appendChild(div);
-                    document.getElementById("div").innerHTML = html_text;
-                } 
-            };
-            xhr.send(formData);
-        }
-
-        function initMap(latitude, longitude, order) {
-
+        function initMap(latitude, longitude, order, startLat, startLng) {
             var directionsDisplay = new google.maps.DirectionsRenderer();
+            var directionsService = new google.maps.DirectionsService();
             var markerLocation = {lat: latitude, lng: longitude};
             var mapOptions = {
-                zoom: 14,
+                zoom: 12,
                 center: markerLocation    
             }
             var map = new google.maps.Map(document.querySelector("#map"), mapOptions);
             directionsDisplay.setMap(map);
-
             displayMap(order);
-
             // display marker
             var marker = new google.maps.Marker({
                 position: markerLocation,
                 map: map
+            });
+            document.getElementById("walk").addEventListener("click", function() {
+                marker.setMap(null);
+                calcRoute(latitude, longitude, startLat, startLng, directionsDisplay, directionsService, "WALKING");
+            });
+            document.getElementById("bike").addEventListener("click", function() {
+                marker.setMap(null);
+                calcRoute(latitude, longitude, startLat, startLng, directionsDisplay, directionsService, "BICYCLING");
+            });
+            document.getElementById("drive").addEventListener("click", function() {
+                marker.setMap(null);
+                calcRoute(latitude, longitude, startLat, startLng, directionsDisplay, directionsService, "DRIVING");
             });
         }
 
@@ -512,17 +513,13 @@
             orderPhoto = order;
         }
 
-        function calcRouteDrive(latitude, longitude, startLat, startLng) {
-            var directionsService = new google.maps.DirectionsService();
-            var directionsDisplay = new google.maps.DirectionsRenderer();
-
-            var start = {lat: startLat, lng: startLng};
-            var end = {lat: latitude, lng: longitude};
-            console.log(end);
+        function calcRoute(latitude, longitude, startLat, startLng, directionsDisplay, directionsService, mode) {
+            var start = new google.maps.LatLng(startLat, startLng);
+            var end = new google.maps.LatLng(latitude, longitude);
             var request = {
-            origin: start,
-            destination: end,
-            travelMode: 'DRIVING'
+                origin: start,
+                destination: end,
+                travelMode: mode
             };
             directionsService.route(request, function(result, status) {
                 if (status == 'OK') {
