@@ -312,9 +312,6 @@
             var form = document.getElementById("searchForm");
             // gather form data
             var formData = new FormData(form);
-            for([key, value] of formData.entries()) {
-              console.log(key + ': ' + value);
-            }
             var xhr = new XMLHttpRequest();
             // use AJAX to post form data
             xhr.open("post", "place.php", true);
@@ -531,7 +528,7 @@
 
     </script>
     <script async defer
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDhC1Tha8FKORJfe7--SYluRWe_n1LVMoE">
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM">
     </script>
 </body>
 </html>
