@@ -22,6 +22,7 @@
             }
         } 
         // user checked "Here" button
+        // When user checked "Here" button, there is no need to call the place API to get the lat & lng since they are alreay obtained!
         else {
             $location = $_POST['location'];
             $urlOfMap = "https://maps.googleapis.com/maps/api/geocode/json?address=".urlencode($_POST['location'])."&key=AIzaSyCAOh4hsHZ7zKU-71Jn7yql0LcrsA_iVEM";
